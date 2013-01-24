@@ -30,7 +30,8 @@ def getcontent(uri):
     return responsetext
 
 
-def archivenext(content):
+def getpostcontent(uri):
+    "return the elements of a blog post: content, title, date"
     pass
 
 

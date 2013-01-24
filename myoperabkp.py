@@ -32,6 +32,32 @@ def getcontent(uri):
 
 def getpostcontent(uri):
     "return the elements of a blog post: content, title, date"
+    myparser = etree.HTMLParser(encoding="utf-8")
+    posthtml = getcontent(uri)
+    tree = etree.HTML(posthtml, parser=myparser)
+    # grab the title of the blog post
+    title = tree.xpath('//div[@id="firstpost"]//h2[@class="title"]/text()')
+    postdate = tree.xpath('//div[@id="firstpost"]//p[@class="postdate"]/text()')
+    content = tree.xpath('//div[@id="firstpost"]//div[@class="content"]')
+    return title, postdate, etree.tostring(content[0])
+
+
+def pathdate(datetext):
+    """return a path according to the date text
+    datetext: Sunday, March 30, 2008 6:32:55 PM
+    pathdate: /2008/03/30/"""
+    pass
+
+
+def getimages(blogpostdata):
+    "given the blog post data structure, grab all local images"
+    # Todo saving in a local directory
+    pass
+
+
+def archiveit(blogpostdata, arcpath):
+    "given the blogpostdata, archive them locally in arcpath"
+    # todo creating a directory structure
     pass
 
 
@@ -69,11 +95,21 @@ def main():
         action='store',
         dest="username",
         help='username we want to backup')
+    parser.add_argument(
+        '-o',
+        action='store',
+        dest="archivepath",
+        help='local path where the backup will be kept')
 
     args = parser.parse_args()
     username = args.username
     useruri = myopath % (username)
-    print len(blogpostlist(useruri))
+    # return the list of all blog posts URI
+    # blogpostlist(useruri)
+    foo = getpostcontent('http://my.opera.com/karlcow/blog/2011/12/10/tweetdeck-for-webkit-only')
+    print foo
+    # Encoding encoding
+    # print foo[0].encode('utf-8')
 
 if __name__ == "__main__":
     sys.exit(main())

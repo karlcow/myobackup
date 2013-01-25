@@ -16,7 +16,10 @@ from lxml import etree
 from urlparse import urljoin
 import time
 import string
-# import os
+import urllib2
+import imghdr
+import os
+import errno
 # import locale
 
 # variables
@@ -50,6 +53,16 @@ def getpostcontent(uri):
         ("imglist", imageslist)])
 
 
+def mkdir(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+
 def pathdate(datetext):
     """return a path according to the date text
     datetext: Sunday, March 30, 2008 6:32:55 PM
@@ -58,19 +71,35 @@ def pathdate(datetext):
     return time.strftime("/%Y/%m/%d/", datestruct)
 
 
-def getimages(blogpostdata, pathdate):
+def getimages(blogpostdata, pathdate, archivepath):
     "given the blog post data structure, grab all local images"
     # Todo saving in a local directory
     for imguri in blogpostdata['imglist']:
+        # take the last part of the path after "/"
         imagename = string.rsplit(imguri, "/", 1)[-1:][0]
-        filename = ("%s%s") % (pathdate, imagename)
-        print filename
-        # imgout = open(filename, "wb")
-        # imgout.write(imagebit)
-        # imgout.close()
+        # take the last part of the string after "."
+        extension = string.rsplit(imagename, ".", 1)[-1:][0]
+        # where it should be saved
+        filename = ("%s%s%s") % (archivepath, pathdate, imagename)
+        # read image data
+        imageresp = urllib2.urlopen(imguri)
+        imagedata = imageresp.read()
+        imageresp.close()
+        # if the extension not in common format, what is it?
+        if extension.lower() not in ["jpg", "png", "gif"]:
+            imagetype = imghdr.what(None, imagedata[:32])
+            if imagetype == "jpeg":
+                extension = "jpg"
+            # create a new filename for this image
+            filename = ("%s.%s") % (filename, extension)
+        # save the image
+        with open(filename, 'wb') as imagefile:
+            imagefile.write(imagedata)
+            logging.info("created image at %s" % (filename))
 
 
-def archiveit(blogpostdata, arcpath):
+
+def archiveit(blogpostdata, archivepath):
     "given the blogpostdata, archive them locally in arcpath"
     # todo creating a directory structure
     pass
@@ -118,17 +147,20 @@ def main():
 
     args = parser.parse_args()
     username = args.username
+    archivepath = args.archivepath
     useruri = myopath % (username)
     # return the list of all blog posts URI
     everylinks = blogpostlist(useruri)
     # iterate over all blogposts
+    everylinks = ["http://my.opera.com/karlcow/blog/2011/05/09/make-web-not-war-2011-vancouver",]
     for blogpostlink in everylinks:
         blogpost = getpostcontent(blogpostlink)
         print blogpost['title'][0]
         blogpostdatepath = pathdate(blogpost['date'][0])
+        mkdir(("%s%s") % (archivepath, blogpostdatepath))
         # if the list of images is not empty, then grab the images
         if blogpost['imglist']:
-            getimages(blogpost, blogpostdatepath)
+            getimages(blogpost, blogpostdatepath, archivepath)
     # Encoding encoding
     # print foo[0].encode('utf-8')
 

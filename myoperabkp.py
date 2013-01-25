@@ -20,7 +20,7 @@ import urllib2
 import imghdr
 import os
 import errno
-# import locale
+from string import Template
 
 # variables
 myopath = "http://my.opera.com/%s/archive/"
@@ -110,10 +110,22 @@ def changeimglink(imguri, newloc, blogposthtml):
     return blogposthtml
 
 
-def archiveit(blogpostdata, archivepath):
-    "given the blogpostdata, archive them locally in arcpath"
-    # todo creating a directory structure
-    pass
+def archivepost(blogpost, localpostpath):
+    "given the blogpost, archive it locally"
+    extension = "html"
+    posturi = blogpost['uri']
+    postname = string.rsplit(posturi, "/", 1)[-1:][0]
+    postdate = blogpost['date'][0]
+    posttitle = blogpost['title'][0]
+    postcontent = blogpost['html']
+    with open('posttemplate.html', 'r') as source:
+        t = Template(source.read())
+        result = t.substitute(date=postdate, title=posttitle, content=postcontent)
+    filename = "%s.%s" % (postname, extension)
+    fullpath = "%s%s" % (localpostpath, filename)
+    with open(fullpath, 'w') as blogfile:
+        blogfile.write(result)
+        logging.info("created blogpost at %s" % (fullpath))
 
 
 def blogpostlist(useruri):
@@ -163,12 +175,9 @@ def main():
     # return the list of all blog posts URI
     everylinks = blogpostlist(useruri)
     # iterate over all blogposts
-    everylinks = ["http://my.opera.com/karlcow/blog/2011/05/09/make-web-not-war-2011-vancouver",]
     for blogpostlink in everylinks:
         # get the data about the blog post
         blogpost = getpostcontent(blogpostlink)
-        # get the html of the content
-        blogposthtml = blogpost['html']
         # Convert the date of the blog post to a path
         blogpostdate = blogpost['date'][0]
         blogpostdatepath = pathdate(blogpostdate)
@@ -182,13 +191,10 @@ def main():
             for imguri in imgurilist:
                 imagename = archiveimage(imguri, localpostpath)
                 newimageloc = "%s%s" % (blogpostdatepath, imagename)
-                blogpost['html'] = changeimglink(imguri, newimageloc, blogposthtml)
+                blogpost['html'] = changeimglink(imguri, newimageloc, blogpost['html'])
             # change the links in the blog post
-
-    # TODO: issue on rewriting the internal href
-
-    # Encoding encoding
-    # print foo[0].encode('utf-8')
+        archivepost(blogpost, localpostpath)
+        print "* " + blogpost['title'][0]
 
 if __name__ == "__main__":
     sys.exit(main())

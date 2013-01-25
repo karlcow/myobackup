@@ -15,6 +15,7 @@ import logging
 from lxml import etree
 from urlparse import urljoin
 import time
+import string
 # import os
 # import locale
 
@@ -40,7 +41,13 @@ def getpostcontent(uri):
     title = tree.xpath('//div[@id="firstpost"]//h2[@class="title"]/text()')
     postdate = tree.xpath('//div[@id="firstpost"]//p[@class="postdate"]/text()')
     content = tree.xpath('//div[@id="firstpost"]//div[@class="content"]')
-    return dict([("uri", uri), ("title", title), ("date", postdate), ("html", etree.tostring(content[0]))])
+    imageslist = tree.xpath('//div[@id="firstpost"]//div[@class="content"]//img/@src')
+    return dict([
+        ("uri", uri),
+        ("title", title),
+        ("date", postdate),
+        ("html", etree.tostring(content[0])),
+        ("imglist", imageslist)])
 
 
 def pathdate(datetext):
@@ -51,10 +58,16 @@ def pathdate(datetext):
     return time.strftime("/%Y/%m/%d/", datestruct)
 
 
-def getimages(blogpostdata):
+def getimages(blogpostdata, pathdate):
     "given the blog post data structure, grab all local images"
     # Todo saving in a local directory
-    pass
+    for imguri in blogpostdata['imglist']:
+        imagename = string.rsplit(imguri, "/", 1)[-1:][0]
+        filename = ("%s%s") % (pathdate, imagename)
+        print filename
+        # imgout = open(filename, "wb")
+        # imgout.write(imagebit)
+        # imgout.close()
 
 
 def archiveit(blogpostdata, arcpath):
@@ -107,10 +120,15 @@ def main():
     username = args.username
     useruri = myopath % (username)
     # return the list of all blog posts URI
-    # blogpostlist(useruri)
-    foo = getpostcontent('http://my.opera.com/karlcow/blog/2012/04/26/open-the-web-browser-reality')
-    print foo['date'][0]
-    print pathdate(foo['date'][0])
+    everylinks = blogpostlist(useruri)
+    # iterate over all blogposts
+    for blogpostlink in everylinks:
+        blogpost = getpostcontent(blogpostlink)
+        print blogpost['title'][0]
+        blogpostdatepath = pathdate(blogpost['date'][0])
+        # if the list of images is not empty, then grab the images
+        if blogpost['imglist']:
+            getimages(blogpost, blogpostdatepath)
     # Encoding encoding
     # print foo[0].encode('utf-8')
 

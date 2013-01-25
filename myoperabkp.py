@@ -71,32 +71,43 @@ def pathdate(datetext):
     return time.strftime("/%Y/%m/%d/", datestruct)
 
 
-def getimages(blogpostdata, pathdate, archivepath):
-    "given the blog post data structure, grab all local images"
-    # Todo saving in a local directory
-    for imguri in blogpostdata['imglist']:
-        # take the last part of the path after "/"
-        imagename = string.rsplit(imguri, "/", 1)[-1:][0]
-        # take the last part of the string after "."
-        extension = string.rsplit(imagename, ".", 1)[-1:][0]
-        # where it should be saved
-        filename = ("%s%s%s") % (archivepath, pathdate, imagename)
-        # read image data
-        imageresp = urllib2.urlopen(imguri)
-        imagedata = imageresp.read()
-        imageresp.close()
-        # if the extension not in common format, what is it?
-        if extension.lower() not in ["jpg", "png", "gif"]:
-            imagetype = imghdr.what(None, imagedata[:32])
-            if imagetype == "jpeg":
-                extension = "jpg"
-            # create a new filename for this image
-            filename = ("%s.%s") % (filename, extension)
-        # save the image
-        with open(filename, 'wb') as imagefile:
-            imagefile.write(imagedata)
-            logging.info("created image at %s" % (filename))
+def archiveimage(imguri, localpostpath):
+    "save the image locally"
+    # read image data
+    imageresp = urllib2.urlopen(imguri)
+    imagedata = imageresp.read()
+    imageresp.close()
+    # take the last part of the path after "/"
+    imagename = string.rsplit(imguri, "/", 1)[-1:][0]
+    # take the last part of the string after "."
+    extension = string.rsplit(imagename, ".", 1)[-1:][0]
+    # if the extension not in common format, what is it?
+    # TOFIX: corner cases
+    # foo.bar (but really foo.bar.png)
+    # foo     (but really foo.png)
+    # foo.svg
+    if extension.lower() not in ["jpg", "png", "gif"]:
+        imagetype = imghdr.what(None, imagedata[:32])
+        if imagetype == "jpeg":
+            extension = "jpg"
+        else:
+            extension = imagetype
+        filename = "%s.%s" % (imagename, extension)
+    else:
+        filename = imagename
+    fullpath = "%s%s" % (localpostpath, filename)
+    # save the image
+    with open(fullpath, 'wb') as imagefile:
+        imagefile.write(imagedata)
+        logging.info("created image at %s" % (fullpath))
+    return filename
 
+
+def changeimglink(imguri, newloc, blogposthtml):
+    "change all URI to images by the local path"
+    # rewrite the img src to the new destination
+    blogposthtml = blogposthtml.replace(imguri, newloc)
+    return blogposthtml
 
 
 def archiveit(blogpostdata, archivepath):
@@ -154,13 +165,28 @@ def main():
     # iterate over all blogposts
     everylinks = ["http://my.opera.com/karlcow/blog/2011/05/09/make-web-not-war-2011-vancouver",]
     for blogpostlink in everylinks:
+        # get the data about the blog post
         blogpost = getpostcontent(blogpostlink)
-        print blogpost['title'][0]
-        blogpostdatepath = pathdate(blogpost['date'][0])
-        mkdir(("%s%s") % (archivepath, blogpostdatepath))
-        # if the list of images is not empty, then grab the images
-        if blogpost['imglist']:
-            getimages(blogpost, blogpostdatepath, archivepath)
+        # get the html of the content
+        blogposthtml = blogpost['html']
+        # Convert the date of the blog post to a path
+        blogpostdate = blogpost['date'][0]
+        blogpostdatepath = pathdate(blogpostdate)
+        # Create the local path where the blog post will be archived
+        localpostpath = "%s%s" % (archivepath, blogpostdatepath)
+        mkdir(localpostpath)
+        # Archive images
+        imgurilist = blogpost['imglist']
+        if imgurilist:
+            # if not empty list, archive images
+            for imguri in imgurilist:
+                imagename = archiveimage(imguri, localpostpath)
+                newimageloc = "%s%s" % (blogpostdatepath, imagename)
+                blogpost['html'] = changeimglink(imguri, newimageloc, blogposthtml)
+            # change the links in the blog post
+
+    # TODO: issue on rewriting the internal href
+
     # Encoding encoding
     # print foo[0].encode('utf-8')
 

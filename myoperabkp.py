@@ -14,6 +14,7 @@ import requests
 import logging
 from lxml import etree
 from urlparse import urljoin
+import time
 # import os
 # import locale
 
@@ -39,14 +40,15 @@ def getpostcontent(uri):
     title = tree.xpath('//div[@id="firstpost"]//h2[@class="title"]/text()')
     postdate = tree.xpath('//div[@id="firstpost"]//p[@class="postdate"]/text()')
     content = tree.xpath('//div[@id="firstpost"]//div[@class="content"]')
-    return title, postdate, etree.tostring(content[0])
+    return dict([("uri", uri), ("title", title), ("date", postdate), ("html", etree.tostring(content[0]))])
 
 
 def pathdate(datetext):
     """return a path according to the date text
     datetext: Sunday, March 30, 2008 6:32:55 PM
     pathdate: /2008/03/30/"""
-    pass
+    datestruct = time.strptime(datetext, '%A, %B %d, %Y %I:%M:%S %p')
+    return time.strftime("/%Y/%m/%d/", datestruct)
 
 
 def getimages(blogpostdata):
@@ -106,8 +108,9 @@ def main():
     useruri = myopath % (username)
     # return the list of all blog posts URI
     # blogpostlist(useruri)
-    foo = getpostcontent('http://my.opera.com/karlcow/blog/2011/12/10/tweetdeck-for-webkit-only')
-    print foo
+    foo = getpostcontent('http://my.opera.com/karlcow/blog/2012/04/26/open-the-web-browser-reality')
+    print foo['date'][0]
+    print pathdate(foo['date'][0])
     # Encoding encoding
     # print foo[0].encode('utf-8')
 

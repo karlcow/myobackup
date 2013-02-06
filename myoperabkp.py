@@ -134,7 +134,7 @@ def blogpostlist(useruri):
     myparser = etree.HTMLParser(encoding="utf-8")
     archivehtml = getcontent(useruri)
     tree = etree.HTML(archivehtml, parser=myparser)
-    navlinks = tree.xpath('//p[@class="pagenav"]//a/@href')
+    navlinks = tree.xpath('(//p[@class="pagenav"] | //div[@class="month"]//li)//a/@href')
     # Insert the first page of the archive at the beginning
     navlinks.insert(0, useruri)
     # Remove the last item of the list which is the next link

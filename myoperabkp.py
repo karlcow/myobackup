@@ -25,7 +25,6 @@ from string import Template
 # variables
 myopath = "http://my.opera.com/%s/archive/"
 
-
 def getcontent(uri):
     """Given a uri, parse an html document"""
     headers = {'User-Agent': "MyOpera-Backup/1.0"}
@@ -124,7 +123,7 @@ def archivepost(blogpost, localpostpath):
     filename = "%s.%s" % (postname, extension)
     fullpath = "%s%s" % (localpostpath, filename)
     with open(fullpath, 'w') as blogfile:
-        blogfile.write(result)
+        blogfile.write(result.encode('utf-8'))
         logging.info("created blogpost at %s" % (fullpath))
 
 
@@ -134,6 +133,7 @@ def blogpostlist(useruri):
     myparser = etree.HTMLParser(encoding="utf-8")
     archivehtml = getcontent(useruri)
     tree = etree.HTML(archivehtml, parser=myparser)
+    # Check for both types of MyOpera archive
     navlinks = tree.xpath('//p[@class="pagenav"]//a/@href')
     # Insert the first page of the archive at the beginning
     navlinks.insert(0, useruri)
@@ -147,6 +147,56 @@ def blogpostlist(useruri):
         for link in links:
             postlist.append(urljoin(useruri, link))
     return postlist
+
+
+def createwxritem(blogpost, WP, CONTENT):
+    "Create an lxml element (item) for each item post for WXR"
+    item = etree.Element('item')
+    etree.SubElement(item, 'title').text = blogpost['title'][0]
+    etree.SubElement(item, WP + 'status').text = 'publish'
+    etree.SubElement(item, WP + 'post_type').text = 'post'
+    etree.SubElement(item, CONTENT + "encoded").text = etree.CDATA(blogpost['html'])
+    # MyOpera date format is "Monday, December 10, 2012 6:35:49 AM"
+    # pubDate format is "Thu, 24 Sep 2012 01:40:01 +0000"
+    datestruct = time.strptime(blogpost['date'][0], '%A, %B %d, %Y %I:%M:%S %p')
+    pubdate = time.strftime("%a, %d %b %Y %T", datestruct)
+    isodate = time.strftime("%Y-%m-%d %T", datestruct)
+    etree.SubElement(item, "pubDate").text = pubdate + ' +0000'
+    etree.SubElement(item, WP + "post_date").text = isodate
+    etree.SubElement(item, WP + "post_date_gmt").text = isodate
+    return item
+
+
+def createwxr(blogposts):
+    "Create a WordPress Extended RSS (WXR) file"
+    # WXR namespaces
+    NS_EXCERPT = "http://wordpress.org/export/1.2/excerpt/"
+    NS_CONTENT = "http://purl.org/rss/1.0/modules/content/"
+    NS_WFW = "http://wellformedweb.org/CommentAPI/"
+    NS_DC = "http://purl.org/dc/elements/1.1/"
+    NS_WP = "http://wordpress.org/export/1.2/"
+    EXCERPT = "{%s}" % NS_EXCERPT
+    CONTENT = "{%s}" % NS_CONTENT
+    WFW = "{%s}" % NS_WFW
+    DC = "{%s}" % NS_DC
+    WP = "{%s}" % NS_WP
+    NSMAP = {
+        'excerpt': NS_EXCERPT,
+        'content': NS_CONTENT,
+        'wfw': NS_WFW,
+        'dc': NS_DC,
+        'wp': NS_WP,
+    }
+    # Generate the WordPress XML document
+    root = etree.Element('rss', attrib={'version': '2.0'}, nsmap=NSMAP)
+    channel = etree.SubElement(root, 'channel')
+    wxr_version = etree.SubElement(channel, WP + 'wxr_version').text = "1.2"
+    for blogpost in blogposts:
+        item = createwxritem(blogpost, WP, CONTENT)
+        channel.append(item)
+    # Write to file:
+    tree = etree.ElementTree(root)
+    tree.write('output.xml', encoding='utf-8', pretty_print=True, xml_declaration=True)
 
 
 def main():
@@ -172,12 +222,15 @@ def main():
     username = args.username
     archivepath = args.archivepath
     useruri = myopath % (username)
+    print 'Getting blog posts for ' + username + '. This may take a while...'
+    blogposts = []
     # return the list of all blog posts URI
     everylinks = blogpostlist(useruri)
     # iterate over all blogposts
     for blogpostlink in everylinks:
-        # get the data about the blog post
+        # get the data about the blog post & add to blogposts list
         blogpost = getpostcontent(blogpostlink)
+        blogposts.append(blogpost)
         # Convert the date of the blog post to a path
         blogpostdate = blogpost['date'][0]
         blogpostdatepath = pathdate(blogpostdate)
@@ -195,6 +248,8 @@ def main():
             # change the links in the blog post
         archivepost(blogpost, localpostpath)
         print "* " + blogpost['title'][0]
-
+    # Create WXR file for WordPress
+    createwxr(blogposts)
+    
 if __name__ == "__main__":
     sys.exit(main())

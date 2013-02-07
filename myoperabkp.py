@@ -134,7 +134,7 @@ def blogpostlist(useruri):
     archivehtml = getcontent(useruri)
     tree = etree.HTML(archivehtml, parser=myparser)
     # Check for both types of MyOpera archive
-    navlinks = tree.xpath('//p[@class="pagenav"]//a/@href')
+    navlinks = tree.xpath('(//p[@class="pagenav"] | //div[@class="month"]//li)//a/@href')
     # Insert the first page of the archive at the beginning
     navlinks.insert(0, useruri)
     # Remove the last item of the list which is the next link
@@ -250,6 +250,6 @@ def main():
         print "* " + blogpost['title'][0]
     # Create WXR file for WordPress
     createwxr(blogposts)
-    
+
 if __name__ == "__main__":
     sys.exit(main())

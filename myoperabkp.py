@@ -167,7 +167,7 @@ def createwxritem(blogpost, WP, CONTENT):
     return item
 
 
-def createwxr(blogposts, archivepath):
+def createwxr(blogposts):
     "Create a WordPress Extended RSS (WXR) file"
     # WXR namespaces
     NS_EXCERPT = "http://wordpress.org/export/1.2/excerpt/"
@@ -196,7 +196,7 @@ def createwxr(blogposts, archivepath):
         channel.append(item)
     # Write to file:
     tree = etree.ElementTree(root)
-    tree.write(archivepath + 'output.xml', encoding='utf-8', pretty_print=True, xml_declaration=True)
+    tree.write('output.xml', encoding='utf-8', pretty_print=True, xml_declaration=True)
 
 
 def main():
@@ -249,7 +249,7 @@ def main():
         archivepost(blogpost, localpostpath)
         print "* " + blogpost['title'][0]
     # Create WXR file for WordPress
-    createwxr(blogposts, archivepath)
+    createwxr(blogposts)
     
 if __name__ == "__main__":
     sys.exit(main())

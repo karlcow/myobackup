@@ -44,12 +44,14 @@ def getpostcontent(uri):
     postdate = tree.xpath('//div[@id="firstpost"]//p[@class="postdate"]/text()')
     content = tree.xpath('//div[@id="firstpost"]//div[@class="content"]')
     imageslist = tree.xpath('//div[@id="firstpost"]//div[@class="content"]//img/@src')
+    taglist = tree.xpath('//div[@id="firstpost"]//a[@rel="tag"]/text()')
     return dict([
         ("uri", uri),
         ("title", title),
         ("date", postdate),
         ("html", etree.tostring(content[0])),
-        ("imglist", imageslist)])
+        ("imglist", imageslist),
+        ("taglist", taglist)])
 
 
 def mkdir(path):
@@ -164,6 +166,12 @@ def createwxritem(blogpost, WP, CONTENT):
     etree.SubElement(item, "pubDate").text = pubdate + ' +0000'
     etree.SubElement(item, WP + "post_date").text = isodate
     etree.SubElement(item, WP + "post_date_gmt").text = isodate
+    # Add an element for each tag
+    for tag in blogpost['taglist']:
+        tag_element = etree.SubElement(item, "category")
+        tag_element.text = etree.CDATA(tag)
+        tag_element.set('domain', 'post_tag')
+        tag_element.set('nicename', tag)
     return item
 
 

@@ -219,6 +219,7 @@ def main():
         '-u',
         action='store',
         dest="username",
+        required=True,
         help='username we want to backup')
     parser.add_argument(
         '-o',

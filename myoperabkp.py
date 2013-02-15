@@ -236,6 +236,8 @@ def main():
     blogposts = []
     # return the list of all blog posts URI
     everylinks = blogpostlist(useruri)
+    print "We grabbed the list of all URIs for %s" % (username)
+    print "Let's save them locally in %s" % (archivepath)
     # iterate over all blogposts
     for blogpostlink in everylinks:
         # get the data about the blog post & add to blogposts list

@@ -225,6 +225,7 @@ def main():
         '-o',
         action='store',
         dest="archivepath",
+        default="myoarchive",
         help='local path where the backup will be kept')
 
     args = parser.parse_args()

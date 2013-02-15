@@ -21,6 +21,7 @@ import imghdr
 import os
 import errno
 from string import Template
+import fnmatch
 
 # variables
 myopath = "http://my.opera.com/%s/archive/"
@@ -137,17 +138,24 @@ def blogpostlist(useruri):
     tree = etree.HTML(archivehtml, parser=myparser)
     # Check for both types of MyOpera archive
     navlinks = tree.xpath('(//p[@class="pagenav"] | //div[@class="month"]//li)//a/@href')
-    # Insert the first page of the archive at the beginning
-    navlinks.insert(0, useruri)
     # Remove the last item of the list which is the next link
     navlinks.pop()
+    # create a sublist of archives links
+    archlinks = fnmatch.filter(navlinks, '?startidx=*')
+    # Insert the first page of the archive at the beginning
+    archlinks.insert(0, useruri)
+    # making full URI
+    archlinks = [urljoin(useruri, archivelink) for archivelink in archlinks]
     # we go through all the list
-    for navlink in navlinks:
-        archtml = getcontent(urljoin(useruri, navlink))
+    for archivelink in archlinks:
+        archtml = getcontent(archivelink)
         tree = etree.HTML(archtml, parser=myparser)
         links = tree.xpath('//div[@id="arc"]//li//a/@href')
+        # Getting the links for all the archive page only!
         for link in links:
             postlist.append(urljoin(useruri, link))
+    # finally adding the archive pages themselves to save them locally
+    postlist.extend(archlinks)
     return postlist
 
 

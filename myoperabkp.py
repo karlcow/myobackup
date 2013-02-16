@@ -223,7 +223,7 @@ def createwxr(blogposts, archivepath):
         channel.append(item)
     # Write to file:
     tree = etree.ElementTree(root)
-    tree.write(archivepath + 'output.xml', encoding='utf-8', pretty_print=True, xml_declaration=True)
+    tree.write(archivepath + os.sep + 'output.xml', encoding='utf-8', pretty_print=True, xml_declaration=True)
 
 
 def main():

@@ -40,9 +40,20 @@ def getpostcontent(uri):
     myparser = etree.HTMLParser(encoding="utf-8")
     posthtml = getcontent(uri)
     tree = etree.HTML(posthtml, parser=myparser)
-    # grab the title of the blog post
-    title = tree.xpath('//div[@id="firstpost"]//h2[@class="title"]/text()')
-    postdate = tree.xpath('//div[@id="firstpost"]//p[@class="postdate"]/text()')
+    # grab the title/date of the blog post. There are two forms:
+    # idpost - http://my.opera.com/{username}/blog/?id={id}
+    # <h2 class="title"><a href="/{username}/blog/show.dml/{id}">FooText</a></h2>
+    # <p class="postdate"><a href="/{username}/blog/show.dml/{id}" title="Permanent link">Wednesday, October 8, 2008 4:19:29 AM</a></p>
+    # prosepost
+    # <h2 class="title">FooText</h2>
+    # <p class="postdate">Thursday, October 16, 2008 11:12:34 PM</p>
+    idpost = uri.partition('?id=')[2]
+    if idpost:
+        title = tree.xpath('//div[@id="firstpost"]//h2[@class="title"]/a/text()')
+        postdate = tree.xpath('//div[@id="firstpost"]//p[@class="postdate"]/a/text()')
+    else:
+        title = tree.xpath('//div[@id="firstpost"]//h2[@class="title"]/text()')
+        postdate = tree.xpath('//div[@id="firstpost"]//p[@class="postdate"]/text()')
     content = tree.xpath('//div[@id="firstpost"]//div[@class="content"]')
     imageslist = tree.xpath('//div[@id="firstpost"]//div[@class="content"]//img/@src')
     taglist = tree.xpath('//div[@id="firstpost"]//a[@rel="tag"]/text()')

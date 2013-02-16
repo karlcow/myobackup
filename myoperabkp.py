@@ -128,6 +128,9 @@ def archivepost(blogpost, localpostpath):
     extension = "html"
     posturi = blogpost['uri']
     postname = string.rsplit(posturi, "/", 1)[-1:][0]
+    # to cope with idpost type, aka postname = ?id={id}
+    if postname.startswith('?id='):
+        postname = postname[4:]
     postdate = blogpost['date'][0]
     posttitle = blogpost['title'][0]
     postcontent = blogpost['html']

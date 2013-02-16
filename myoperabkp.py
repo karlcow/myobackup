@@ -36,7 +36,7 @@ def getcontent(uri):
 
 
 def getpostcontent(uri):
-    "return the elements of a blog post: content, title, date"
+    "return the elements of a blog post: content, title, date, imglist, taglist"
     myparser = etree.HTMLParser(encoding="utf-8")
     posthtml = getcontent(uri)
     tree = etree.HTML(posthtml, parser=myparser)

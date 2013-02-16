@@ -165,8 +165,6 @@ def blogpostlist(useruri):
         # Getting the links for all the archive page only!
         for link in links:
             postlist.append(urljoin(useruri, link))
-    # finally adding the archive pages themselves to save them locally
-    postlist.extend(archlinks)
     return postlist
 
 

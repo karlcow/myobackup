@@ -27,4 +27,4 @@ At present, the content and tags of posts are exported but not their comments.
 
 ## License
 
-Released under the MIT License ([see LICENSE.md](LICENSE.md)).
+Released under the MIT License (see [LICENSE.md](LICENSE.md)).

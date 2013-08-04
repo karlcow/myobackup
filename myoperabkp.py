@@ -172,6 +172,7 @@ def mmdoutput(blogpost, postname, file_format, localpostpath):
         mdpostcontent = mdpostfile.read()
     with open('posttemplate.md', 'r') as source:
         t = Template(source.read())
+        # TOFIX the date YYYY-MM-DD HH:SS
         result = t.substitute(date=postdate, title=posttitle, content=mdpostcontent.decode('utf-8'), slug=postname)
     with open(fullpath, 'w') as blogfile:
         blogfile.write(result.encode('utf-8'))

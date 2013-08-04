@@ -87,6 +87,12 @@ def pathdate(datetext):
     datestruct = time.strptime(datetext, '%A, %B %d, %Y %I:%M:%S %p')
     return time.strftime("/%Y/%m/%d/", datestruct)
 
+def pelicandate(datetext):
+    """return a Pelican format date  according to the date text
+    datetext: Sunday, March 30, 2008 6:32:55 PM
+    pelicandate: 2008-03-30 06:32"""
+    datestruct = time.strptime(datetext, '%A, %B %d, %Y %I:%M:%S %p')
+    return time.strftime("%Y-%m-%d %H:%M", datestruct)
 
 def archiveimage(imguri, localpostpath):
     "save the image locally"
@@ -158,7 +164,7 @@ def htmloutput(blogpost, postname, file_format, localpostpath):
 def mmdoutput(blogpost, postname, file_format, localpostpath):
     "Multi-Markdown Output for Pelican"
     extension = "md"
-    postdate = blogpost['date'][0]
+    postdate = pelicandate(blogpost['date'][0])
     posttitle = blogpost['title'][0]
     postcontentraw = blogpost['html']
     postcontent = postcontentraw.replace('<br/><br/>', '</p><p>')
@@ -172,7 +178,6 @@ def mmdoutput(blogpost, postname, file_format, localpostpath):
         mdpostcontent = mdpostfile.read()
     with open('posttemplate.md', 'r') as source:
         t = Template(source.read())
-        # TOFIX the date YYYY-MM-DD HH:SS
         result = t.substitute(date=postdate, title=posttitle, content=mdpostcontent.decode('utf-8'), slug=postname)
     with open(fullpath, 'w') as blogfile:
         blogfile.write(result.encode('utf-8'))

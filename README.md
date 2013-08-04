@@ -14,13 +14,14 @@ A Python script to export the blog posts of a [My Opera](http://my.opera.com/) u
 
 To run it, just do:
 
-    python myoperabkp.py -u <username> -o "<localpath>"
+    python myoperabkp.py -u <username> -o "<localpath>" -f markdown
 
 ## Output
 
 Blog posts are exported in two formats:
 
 - Simple HTML format: An individual file is created for each post.
+- Markdown compatible with [Pelican](http://docs.getpelican.com/en/3.2/)
 - Basic WXR (WordPress eXtended Rss) format: An `output.xml` file is created to import all posts into a WordPress blog.
 
 At present, the content and tags of posts are exported but not their comments.

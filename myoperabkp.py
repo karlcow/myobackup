@@ -8,6 +8,7 @@ Copyright (c) 2013 Grange. All rights reserved.
 see LICENSE.TXT
 """
 
+from __future__ import unicode_literals
 import argparse
 import sys
 import requests
@@ -22,9 +23,12 @@ import os
 import errno
 from string import Template
 import fnmatch
+import subprocess
+
 
 # variables
 myopath = "http://my.opera.com/%s/archive/"
+
 
 def getcontent(uri):
     """Given a uri, parse an html document"""
@@ -123,22 +127,52 @@ def changeimglink(imguri, newloc, blogposthtml):
     return blogposthtml
 
 
-def archivepost(blogpost, localpostpath):
+def archivepost(blogpost, localpostpath, file_format):
     "given the blogpost, archive it locally"
-    extension = "html"
     posturi = blogpost['uri']
     postname = string.rsplit(posturi, "/", 1)[-1:][0]
     # to cope with idpost type, aka postname = ?id={id}
     if postname.startswith('?id='):
         postname = postname[4:]
+    if file_format == "html":
+        htmloutput(blogpost, postname, file_format, localpostpath)
+    elif file_format == "markdown":
+        mmdoutput(blogpost, postname, file_format, localpostpath)
+
+
+def htmloutput(blogpost, postname, file_format, localpostpath):
+    "HTML Output"
     postdate = blogpost['date'][0]
     posttitle = blogpost['title'][0]
     postcontent = blogpost['html']
     with open('posttemplate.html', 'r') as source:
         t = Template(source.read())
         result = t.substitute(date=postdate, title=posttitle, content=postcontent)
+    filename = "%s.%s" % (postname, file_format)
+    fullpath = "%s%s" % (localpostpath, filename)
+    with open(fullpath, 'w') as blogfile:
+        blogfile.write(result.encode('utf-8'))
+        logging.info("created blogpost at %s" % (fullpath))
+
+
+def mmdoutput(blogpost, postname, file_format, localpostpath):
+    "Multi-Markdown Output for Pelican"
+    extension = "md"
+    postdate = blogpost['date'][0]
+    posttitle = blogpost['title'][0]
+    postcontentraw = blogpost['html']
+    postcontent = postcontentraw.replace('<br/><br/>', '</p><p>')
     filename = "%s.%s" % (postname, extension)
     fullpath = "%s%s" % (localpostpath, filename)
+    with open('/tmp/htmlfile', 'w') as tempfile:
+        tempfile.write(postcontent.encode('utf-8'))
+    cmd = ('pandoc -t markdown -f html /tmp/htmlfile -o /tmp/mdfile')
+    subprocess.call(cmd, shell=True)
+    with open('/tmp/mdfile') as mdpostfile:
+        mdpostcontent = mdpostfile.read()
+    with open('posttemplate.md', 'r') as source:
+        t = Template(source.read())
+        result = t.substitute(date=postdate, title=posttitle, content=mdpostcontent.decode('utf-8'), slug=postname)
     with open(fullpath, 'w') as blogfile:
         blogfile.write(result.encode('utf-8'))
         logging.info("created blogpost at %s" % (fullpath))
@@ -247,10 +281,17 @@ def main():
         dest="archivepath",
         default="myoarchive",
         help='local path where the backup will be kept')
+    parser.add_argument(
+        '-f',
+        action='store',
+        dest="file_format",
+        default="html",
+        help='output format for the archive: html (default) or markdown (Pelican)')
 
     args = parser.parse_args()
     username = args.username
     archivepath = args.archivepath
+    file_format = args.file_format
     useruri = myopath % (username)
     print 'Getting blog posts for ' + username + '. This may take a while...'
     blogposts = []
@@ -278,7 +319,7 @@ def main():
                 newimageloc = "%s%s" % (blogpostdatepath, imagename)
                 blogpost['html'] = changeimglink(imguri, newimageloc, blogpost['html'])
             # change the links in the blog post
-        archivepost(blogpost, localpostpath)
+        archivepost(blogpost, localpostpath, file_format)
         print "* " + blogpost['title'][0]
     # Create WXR file for WordPress
     createwxr(blogposts, archivepath)
